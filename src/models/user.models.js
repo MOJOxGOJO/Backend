@@ -51,17 +51,27 @@ const userSchema = new Schema(
 )
 
 userSchema.pre("save", async function (next) {
-    if(!this.isModified("password")) return next();
-    this.password = await bcrypt.hash(this.password,10)
-    next()
-})
+    if (!this.isModified("password")) return next();
+
+    console.log("Before Hashing (Plain Text):", this.password);
+    this.password = await bcrypt.hash(this.password, 10);
+    console.log("After Hashing (Stored in DB):", this.password);
+
+    next();
+});
 
 userSchema.methods.isPasswordCorrect = async function (password) {
-   return await bcrypt.compare(password, this.password)
-}
+    console.log("Comparing Passwords:");
+    console.log("Plain Password:", password);
+    console.log("Stored Hashed Password:", this.password);
+    const result = await bcrypt.compare(password, this.password);
+    console.log("Password Match Result:", result);
+    return result;
+};
 
-userSchema.methods.genrateAccessToken = function() {
-    jwt.sign(
+
+userSchema.methods.generateAccessToken = function(){
+    return jwt.sign(
         {
             _id: this._id,
             email: this.email,
@@ -74,15 +84,14 @@ userSchema.methods.genrateAccessToken = function() {
         }
     )
 }
-
-userSchema.methods.genrateRefreshToken = function() {
-    jwt.sign(
+userSchema.methods.generateRefreshToken = function(){
+    return jwt.sign(
         {
-            _id: this._id,
+            _id: this._id,     
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: process.env.FRESH_TOKEN_EXPIRY
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
     )
 }
